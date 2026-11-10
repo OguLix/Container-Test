@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Register Pengguna · web2</title>
+    <meta
+      name="description"
+      content="Dashboard pendaftaran dan pengelolaan akun pengguna untuk layanan web2 pada demonstrasi kontainer dan uji beban."
+    />
+    <meta name="theme-color" content="#f5f1e7" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ['"Fraunces"', "Georgia", "serif"],
+              sans: ['"IBM Plex Sans"', "system-ui", "sans-serif"],
+              mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body class="min-h-screen">
+    <a class="skip-link" href="#konten">Lompat ke konten utama</a>
+
+    <div class="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 lg:py-12 lg:pl-16 lg:pr-10">
+      <div class="sheet">
+        <header class="masthead">
+          <div>
+            <p class="kicker">Layanan keanggotaan · web2</p>
+            <h1 class="display">Register Pengguna</h1>
+            <p class="lede">
+              Buku anggota untuk pendaftaran akun, peran, dan status keanggotaan. Data disimpan di memori
+              proses, tanpa basis data, sehingga penulisan tetap cepat saat uji beban.
+            </p>
+          </div>
+          <div class="masthead-side">
+            <div class="status-line" id="healthBadge" data-state="unknown">
+              <span class="dot" aria-hidden="true"></span>
+              <span id="healthText">Memeriksa layanan</span>
+            </div>
+            <p class="meta-line">uptime <span id="healthUptime">-</span></p>
+            <button class="btn btn-ghost" id="themeToggle" type="button" aria-pressed="false">
+              Mode gelap
+            </button>
+          </div>
+        </header>
+
+        <section class="stats" aria-label="Ringkasan keanggotaan">
+          <div class="stat">
+            <span class="stat-label">Total akun</span>
+            <span class="stat-value" id="statTotal">0</span>
+            <span class="stat-note">baris pada register</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Akun aktif</span>
+            <span class="stat-value" id="statActive">0</span>
+            <span class="stat-note">status Active saat ini</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Peran terpakai</span>
+            <span class="stat-value" id="statRoles">0</span>
+            <span class="stat-note">peran berbeda pada register</span>
+          </div>
+        </section>
+
+        <main class="workspace" id="konten">
+          <section class="panel" aria-labelledby="judul-form">
+            <h2 class="panel-title" id="judul-form">Daftarkan akun</h2>
+            <p class="panel-note">Nomor akun memakai stempel waktu, dibuat otomatis saat disimpan.</p>
+
+            <form id="createForm" class="mt-4" autocomplete="off">
+              <div class="field">
+                <label for="userName">Nama lengkap</label>
+                <input
+                  class="input"
+                  id="userName"
+                  name="name"
+                  type="text"
+                  maxlength="120"
+                  placeholder="Contoh: Nadia Prameswari"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="userEmail">Email</label>
+                <input
+                  class="input"
+                  id="userEmail"
+                  name="email"
+                  type="email"
+                  maxlength="160"
+                  placeholder="nama@ogulix.tech"
+                  required
+                />
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="userRole">Peran</label>
+                  <select class="input" id="userRole" name="role">
+                    <option value="Member">Member</option>
+                    <option value="Administrator">Administrator</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Auditor">Auditor</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="userStatus">Status</label>
+                  <select class="input" id="userStatus" name="status">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                    <option value="Suspended">Suspended</option>
+                  </select>
+                </div>
+              </div>
+              <p class="form-error" id="formError" role="alert" hidden></p>
+              <button class="btn btn-primary btn-block" id="submitBtn" type="submit">
+                Daftarkan ke register
+              </button>
+            </form>
+          </section>
+
+          <section class="panel" aria-labelledby="judul-buku">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title" id="judul-buku">Buku anggota</h2>
+                <p class="panel-note"><span id="resultCount">0</span> baris ditampilkan</p>
+              </div>
+              <div class="toolbar">
+                <label class="sr-only" for="searchInput">Cari anggota</label>
+                <input
+                  class="input"
+                  id="searchInput"
+                  type="search"
+                  placeholder="Cari nama atau email"
+                  autocomplete="off"
+                />
+                <label class="sr-only" for="statusFilter">Saring status</label>
+                <select class="input" id="statusFilter">
+                  <option value="">Semua status</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                  <option value="Suspended">Suspended</option>
+                </select>
+                <button class="btn btn-ghost" id="refreshBtn" type="button">Muat ulang</button>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="ledger" id="userTable" hidden>
+                <caption class="sr-only">
+                  Daftar akun pengguna pada register web2
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col" class="cell-no">No</th>
+                    <th scope="col">Anggota</th>
+                    <th scope="col">Peran</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Dibuat</th>
+                    <th scope="col" class="cell-actions">Tindakan</th>
+                  </tr>
+                </thead>
+                <tbody id="userRows"></tbody>
+              </table>
+            </div>
+
+            <div class="state" id="stateBox">
+              <p class="state-title" id="stateTitle">Memuat register</p>
+              <p class="state-text" id="stateText">Menghubungi layanan web2.</p>
+              <div class="loading-bar" id="stateLoader" aria-hidden="true"></div>
+              <button class="btn btn-ghost" id="stateAction" type="button" hidden></button>
+            </div>
+
+            <p class="footnote">
+              Data hilang saat kontainer dihentikan. Endpoint uji beban:
+              <code>POST /api/users</code>
+            </p>
+          </section>
+        </main>
+
+        <footer class="colophon">
+          <div>
+            <h2 class="panel-title" style="font-size: 0.95rem">Endpoint layanan</h2>
+            <ul class="endpoint-list">
+              <li><b>GET</b> /health</li>
+              <li><b>GET</b> /api/users</li>
+              <li><b>POST</b> /api/users</li>
+              <li><b>PUT</b> /api/users/:id</li>
+              <li><b>DELETE</b> /api/users/:id</li>
+            </ul>
+          </div>
+          <div class="colophon-meta">
+            <p>Respons terakhir <span class="mono" id="latencyValue">-</span></p>
+            <p>Port host <span class="mono">8082</span> ke kontainer <span class="mono">8080</span></p>
+            <p>Node.js 20 · Express 4 · data in-memory</p>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <dialog class="dialog" id="editDialog" aria-labelledby="editTitle">
+      <div class="dialog-head">
+        <h2 class="dialog-title" id="editTitle">Ubah akun</h2>
+        <button class="btn btn-ghost btn-tiny" type="button" data-close-dialog>Tutup</button>
+      </div>
+      <form id="editForm" autocomplete="off">
+        <input type="hidden" id="editId" />
+        <div class="field">
+          <label for="editName">Nama lengkap</label>
+          <input class="input" id="editName" type="text" maxlength="120" required />
+        </div>
+        <div class="field">
+          <label for="editEmail">Email</label>
+          <input class="input" id="editEmail" type="email" maxlength="160" required />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="editRole">Peran</label>
+            <select class="input" id="editRole">
+              <option value="Member">Member</option>
+              <option value="Administrator">Administrator</option>
+              <option value="Manager">Manager</option>
+              <option value="Auditor">Auditor</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="editStatus">Status</label>
+            <select class="input" id="editStatus">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Suspended">Suspended</option>
+            </select>
+          </div>
+        </div>
+        <p class="form-error" id="editError" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button class="btn btn-primary" id="editSubmit" type="submit">Simpan perubahan</button>
+          <button class="btn btn-ghost" type="button" data-close-dialog>Batal</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="dialog" id="deleteDialog" aria-labelledby="deleteTitle">
+      <div class="dialog-head">
+        <h2 class="dialog-title" id="deleteTitle">Hapus akun</h2>
+        <button class="btn btn-ghost btn-tiny" type="button" data-close-dialog>Tutup</button>
+      </div>
+      <p>
+        Akun <strong id="deleteName">-</strong> akan dihapus dari register. Data bisa didaftarkan ulang
+        lewat formulir, tetapi nomor akunnya akan berbeda.
+      </p>
+      <div class="dialog-actions">
+        <button class="btn btn-primary" id="deleteConfirm" type="button">Hapus dari register</button>
+        <button class="btn btn-ghost" type="button" data-close-dialog>Batalkan</button>
+      </div>
+    </dialog>
+
+    <div class="toast-region" id="toastRegion" role="status" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>

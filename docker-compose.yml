@@ -1,0 +1,61 @@
+# Orkestrasi dua layanan demo. Tanpa key `version`: Compose V2 mengabaikannya
+# dan hanya memunculkan peringatan obsolete.
+name: tugas-container
+
+services:
+  web1:
+    build:
+      context: ./web1-product-service
+      dockerfile: Dockerfile
+    image: tugas-container/web1-product-service:latest
+    container_name: web1
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+    networks:
+      - tugas-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web2:
+    build:
+      context: ./web2-user-service
+      dockerfile: Dockerfile
+    image: tugas-container/web2-user-service:latest
+    container_name: web2
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+    networks:
+      - tugas-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  tugas-net:
+    name: tugas-net
+    driver: bridge

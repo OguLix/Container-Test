@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Katalog Inventaris · web1</title>
+    <meta
+      name="description"
+      content="Dashboard katalog produk dan stok untuk layanan web1 pada demonstrasi kontainer dan uji beban."
+    />
+    <meta name="theme-color" content="#f5f1e7" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ['"Fraunces"', "Georgia", "serif"],
+              sans: ['"IBM Plex Sans"', "system-ui", "sans-serif"],
+              mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body class="min-h-screen">
+    <a class="skip-link" href="#konten">Lompat ke konten utama</a>
+
+    <div class="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 lg:py-12 lg:pl-16 lg:pr-10">
+      <div class="sheet">
+        <header class="masthead">
+          <div>
+            <p class="kicker">Layanan katalog · web1</p>
+            <h1 class="display">Katalog Inventaris</h1>
+            <p class="lede">
+              Buku stok barang untuk demonstrasi manajemen kontainer dan uji beban JMeter. Seluruh baris
+              disimpan di memori proses, tanpa basis data dan tanpa I/O disk.
+            </p>
+          </div>
+          <div class="masthead-side">
+            <div class="status-line" id="healthBadge" data-state="unknown">
+              <span class="dot" aria-hidden="true"></span>
+              <span id="healthText">Memeriksa layanan</span>
+            </div>
+            <p class="meta-line">uptime <span id="healthUptime">-</span></p>
+            <button class="btn btn-ghost" id="themeToggle" type="button" aria-pressed="false">
+              Mode gelap
+            </button>
+          </div>
+        </header>
+
+        <section class="stats" aria-label="Ringkasan inventaris">
+          <div class="stat">
+            <span class="stat-label">Jenis barang</span>
+            <span class="stat-value" id="statCount">0</span>
+            <span class="stat-note">baris pada buku katalog</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Total unit</span>
+            <span class="stat-value" id="statUnits">0</span>
+            <span class="stat-note">akumulasi kolom stok</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Nilai inventaris</span>
+            <span class="stat-value" id="statValue">Rp 0</span>
+            <span class="stat-note">harga dikali stok, dihitung saat ini</span>
+          </div>
+        </section>
+
+        <main class="workspace" id="konten">
+          <section class="panel" aria-labelledby="judul-form">
+            <h2 class="panel-title" id="judul-form">Catat barang baru</h2>
+            <p class="panel-note">Nomor barang dibuat otomatis. Status mengikuti sisa stok.</p>
+
+            <form id="createForm" class="mt-4" autocomplete="off">
+              <div class="field">
+                <label for="productName">Nama barang</label>
+                <input
+                  class="input"
+                  id="productName"
+                  name="name"
+                  type="text"
+                  maxlength="120"
+                  placeholder="Contoh: Docking Station USB-C"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="productCategory">Kategori</label>
+                <input
+                  class="input"
+                  id="productCategory"
+                  name="category"
+                  type="text"
+                  maxlength="40"
+                  list="categoryOptions"
+                  placeholder="Electronics"
+                />
+                <datalist id="categoryOptions"></datalist>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="productPrice">Harga (Rp)</label>
+                  <input
+                    class="input"
+                    id="productPrice"
+                    name="price"
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputmode="numeric"
+                    placeholder="1500000"
+                    required
+                  />
+                </div>
+                <div class="field">
+                  <label for="productStock">Stok</label>
+                  <input
+                    class="input"
+                    id="productStock"
+                    name="stock"
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputmode="numeric"
+                    placeholder="10"
+                    required
+                  />
+                </div>
+              </div>
+              <p class="form-error" id="formError" role="alert" hidden></p>
+              <button class="btn btn-primary btn-block" id="submitBtn" type="submit">
+                Simpan ke katalog
+              </button>
+            </form>
+          </section>
+
+          <section class="panel" aria-labelledby="judul-buku">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title" id="judul-buku">Buku katalog</h2>
+                <p class="panel-note"><span id="resultCount">0</span> baris ditampilkan</p>
+              </div>
+              <div class="toolbar">
+                <label class="sr-only" for="searchInput">Cari barang</label>
+                <input
+                  class="input"
+                  id="searchInput"
+                  type="search"
+                  placeholder="Cari nama atau kategori"
+                  autocomplete="off"
+                />
+                <label class="sr-only" for="categoryFilter">Saring kategori</label>
+                <select class="input" id="categoryFilter">
+                  <option value="">Semua kategori</option>
+                </select>
+                <button class="btn btn-ghost" id="refreshBtn" type="button">Muat ulang</button>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="ledger" id="productTable" hidden>
+                <caption class="sr-only">
+                  Daftar produk pada katalog inventaris web1
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col" class="cell-no">No</th>
+                    <th scope="col">Barang</th>
+                    <th scope="col" class="num">Harga</th>
+                    <th scope="col" class="num">Stok</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="cell-actions">Tindakan</th>
+                  </tr>
+                </thead>
+                <tbody id="productRows"></tbody>
+              </table>
+            </div>
+
+            <div class="state" id="stateBox">
+              <p class="state-title" id="stateTitle">Memuat katalog</p>
+              <p class="state-text" id="stateText">Menghubungi layanan web1.</p>
+              <div class="loading-bar" id="stateLoader" aria-hidden="true"></div>
+              <button class="btn btn-ghost" id="stateAction" type="button" hidden></button>
+            </div>
+
+            <p class="footnote">
+              Data hilang saat kontainer dihentikan. Endpoint uji beban:
+              <code>GET /api/products</code>
+            </p>
+          </section>
+        </main>
+
+        <footer class="colophon">
+          <div>
+            <h2 class="panel-title" style="font-size: 0.95rem">Endpoint layanan</h2>
+            <ul class="endpoint-list">
+              <li><b>GET</b> /health</li>
+              <li><b>GET</b> /api/products</li>
+              <li><b>POST</b> /api/products</li>
+              <li><b>PUT</b> /api/products/:id</li>
+              <li><b>DELETE</b> /api/products/:id</li>
+            </ul>
+          </div>
+          <div class="colophon-meta">
+            <p>Respons terakhir <span class="mono" id="latencyValue">-</span></p>
+            <p>Port host <span class="mono">8081</span> ke kontainer <span class="mono">8080</span></p>
+            <p>Node.js 20 · Express 4 · data in-memory</p>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <dialog class="dialog" id="editDialog" aria-labelledby="editTitle">
+      <div class="dialog-head">
+        <h2 class="dialog-title" id="editTitle">Ubah barang</h2>
+        <button class="btn btn-ghost btn-tiny" type="button" data-close-dialog>Tutup</button>
+      </div>
+      <form id="editForm" autocomplete="off">
+        <input type="hidden" id="editId" />
+        <div class="field">
+          <label for="editName">Nama barang</label>
+          <input class="input" id="editName" type="text" maxlength="120" required />
+        </div>
+        <div class="field">
+          <label for="editCategory">Kategori</label>
+          <input class="input" id="editCategory" type="text" maxlength="40" list="categoryOptions" required />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="editPrice">Harga (Rp)</label>
+            <input class="input" id="editPrice" type="number" min="0" step="1" inputmode="numeric" required />
+          </div>
+          <div class="field">
+            <label for="editStock">Stok</label>
+            <input class="input" id="editStock" type="number" min="0" step="1" inputmode="numeric" required />
+          </div>
+        </div>
+        <p class="form-error" id="editError" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button class="btn btn-primary" id="editSubmit" type="submit">Simpan perubahan</button>
+          <button class="btn btn-ghost" type="button" data-close-dialog>Batal</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="dialog" id="deleteDialog" aria-labelledby="deleteTitle">
+      <div class="dialog-head">
+        <h2 class="dialog-title" id="deleteTitle">Hapus barang</h2>
+        <button class="btn btn-ghost btn-tiny" type="button" data-close-dialog>Tutup</button>
+      </div>
+      <p>
+        Baris <strong id="deleteName">-</strong> akan dihapus dari katalog. Tindakan ini tidak bisa
+        dibatalkan, tetapi data bisa dibuat ulang lewat formulir.
+      </p>
+      <div class="dialog-actions">
+        <button class="btn btn-primary" id="deleteConfirm" type="button">Hapus dari katalog</button>
+        <button class="btn btn-ghost" type="button" data-close-dialog>Batalkan</button>
+      </div>
+    </dialog>
+
+    <div class="toast-region" id="toastRegion" role="status" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>
